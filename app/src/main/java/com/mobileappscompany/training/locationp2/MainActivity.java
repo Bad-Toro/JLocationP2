@@ -1,6 +1,8 @@
 package com.mobileappscompany.training.locationp2;
 
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -22,8 +24,11 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
+import java.io.IOException;
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity
         implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener {
@@ -46,6 +51,7 @@ public class MainActivity extends AppCompatActivity
     protected TextView mLastUpdateTimeTextView;
     protected TextView mLatitudeTextView;
     protected TextView mLongitudeTextView;
+    protected TextView mAddress;
 
 
     protected Boolean mRequestingLocationUpdates;
@@ -68,6 +74,8 @@ public class MainActivity extends AppCompatActivity
         mLatitudeTextView = (TextView) findViewById(R.id.latitude_text);
         mLongitudeTextView = (TextView) findViewById(R.id.longitude_text);
         mLastUpdateTimeTextView = (TextView) findViewById(R.id.last_update_time_text);
+        mAddress = (TextView) findViewById(R.id.address);
+
 
         mRequestingLocationUpdates = false;
         mLastUpdateTime = "";
@@ -113,6 +121,7 @@ public class MainActivity extends AppCompatActivity
         mLatitudeTextView.setText("Lat: " + String.valueOf(mCurrentLocation.getLatitude()));
         mLongitudeTextView.setText("Long: " + String.valueOf(mCurrentLocation.getLongitude()));
         mLastUpdateTimeTextView.setText("Last update: " + mLastUpdateTime);
+        mAddress.setText(getAddress(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude()));
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -221,6 +230,33 @@ public class MainActivity extends AppCompatActivity
         Toast.makeText(this, "Location has been updated",
                 Toast.LENGTH_SHORT).show();
 
+    }
+
+    String getAddress(double lat, double lng) {
+        Geocoder geocoder;
+        List<Address> addresses;
+        geocoder = new Geocoder(this, Locale.getDefault());
+
+        try {
+            addresses = geocoder.getFromLocation(lat, lng, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
+
+            if (addresses.size() > 0) {
+                String address = addresses.get(0).getAddressLine(0); // If any additional address line present than only, check with max available address lines by getMaxAddressLineIndex()
+                String city = addresses.get(0).getLocality();
+                String state = addresses.get(0).getAdminArea();
+                String country = addresses.get(0).getCountryName();
+                String postalCode = addresses.get(0).getPostalCode();
+                String knownName = addresses.get(0).getFeatureName(); // Only if available else return NULL
+
+                return address + "\n" + city + ", " + state
+                        + ", " + postalCode;
+            } else {
+                return "NoGood";
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     public void startUpdatesButtonHandler(View view) {
